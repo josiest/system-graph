@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <concepts>
+#include <algorithm>
+#include <ranges>
 #include <entt/entt.hpp>
 
 class subsystem {
@@ -41,28 +43,37 @@ using second = order_system<order::second>;
 
 class system_manager {
 public:
-    system_manager() : subsystems{}, system_id{ subsystems.create() }
+    system_manager() : registry{}, system_id{ registry.create() }
     {
     }
     template<std::derived_from<subsystem> Subsystem>
     requires std::default_initializable<Subsystem>
     void add()
     {
-        subsystems.emplace<Subsystem>(system_id);
+        auto& component = registry.emplace<Subsystem>(system_id);
+        subsystems.push_back(&component);
     }
-    entt::registry subsystems;
+    void load()
+    {
+        namespace ranges = std::ranges;
+        ranges::for_each(subsystems, &subsystem::load);
+    }
+    void destroy()
+    {
+        namespace views = std::views; namespace ranges = std::ranges;
+        ranges::for_each(subsystems | views::reverse, &subsystem::destroy);
+    }
+private:
+    entt::registry registry;
     entt::entity system_id;
+    std::vector<subsystem*> subsystems;
 };
 
 int main()
 {
-    system_manager sys;
-    sys.add<first>();
-    sys.add<second>();
-
-    sys.subsystems.get<first>(sys.system_id).load();
-    sys.subsystems.get<second>(sys.system_id).load();
-
-    sys.subsystems.get<second>(sys.system_id).destroy();
-    sys.subsystems.get<first>(sys.system_id).destroy();
+    system_manager systems;
+    systems.add<first>();
+    systems.add<second>();
+    systems.load();
+    systems.destroy();
 }
