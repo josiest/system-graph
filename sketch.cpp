@@ -9,17 +9,17 @@ public:
 enum class order {
     first, second
 };
-template<order Order> struct name_for_helper {};
+template<order Order> struct name_helper {};
 template<>
-struct name_for_helper<order::first>{
+struct name_helper<order::first>{
     static constexpr const char * value = "first";
 };
 template<>
-struct name_for_helper<order::second>{
+struct name_helper<order::second>{
     static constexpr const char * value = "second";
 };
 template<order Order>
-constexpr auto name_for = name_for_helper<Order>::value;
+constexpr auto name_for = name_helper<Order>::value;
 
 template<order Order>
 class order_system : public subsystem {
