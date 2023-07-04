@@ -6,38 +6,45 @@ public:
     virtual void destroy() = 0;
 };
 
-class first : public subsystem {
+enum class order {
+    first, second
+};
+template<order Order> struct name_for_helper {};
+template<>
+struct name_for_helper<order::first>{
+    static constexpr const char * value = "first";
+};
+template<>
+struct name_for_helper<order::second>{
+    static constexpr const char * value = "second";
+};
+template<order Order>
+constexpr auto name_for = name_for_helper<Order>::value;
+
+template<order Order>
+class order_system : public subsystem {
 public:
     virtual void load() override
     {
-        std::printf("Load first\n");
+        std::printf("load %s\n", name_for<Order>);
     }
     virtual void destroy() override
     {
-        std::printf("Destroy first\n");
+        std::printf("destroy %s\n", name_for<Order>);
     }
 };
 
-class second : public subsystem {
-public:
-    virtual void load() override
-    {
-        std::printf("Load second\n");
-    }
-    virtual void destroy() override
-    {
-        std::printf("Destroy second\n");
-    }
-};
+using first = order_system<order::first>;
+using second = order_system<order::second>;
 
 int main()
 {
-    first f;
-    second s;
+    first a;
+    second b;
 
-    f.load();
-    s.load();
+    a.load();
+    b.load();
 
-    s.destroy();
-    f.destroy();
+    b.destroy();
+    a.destroy();
 }
