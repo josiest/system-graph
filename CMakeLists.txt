@@ -3,7 +3,7 @@ project(subsystem-interface)
 
 add_executable(sketch sketch.cpp)
 set_target_properties(sketch PROPERTIES
-    CXX_STANDARD 23
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE)
 
 find_package(EnTT REQUIRED)
