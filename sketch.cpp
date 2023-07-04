@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <concepts>
+#include <entt/entt.hpp>
 
 class subsystem {
 public:
@@ -37,14 +39,30 @@ public:
 using first = order_system<order::first>;
 using second = order_system<order::second>;
 
+class system_manager {
+public:
+    system_manager() : subsystems{}, system_id{ subsystems.create() }
+    {
+    }
+    template<std::derived_from<subsystem> Subsystem>
+    requires std::default_initializable<Subsystem>
+    void add()
+    {
+        subsystems.emplace<Subsystem>(system_id);
+    }
+    entt::registry subsystems;
+    entt::entity system_id;
+};
+
 int main()
 {
-    first a;
-    second b;
+    system_manager sys;
+    sys.add<first>();
+    sys.add<second>();
 
-    a.load();
-    b.load();
+    sys.subsystems.get<first>(sys.system_id).load();
+    sys.subsystems.get<second>(sys.system_id).load();
 
-    b.destroy();
-    a.destroy();
+    sys.subsystems.get<second>(sys.system_id).destroy();
+    sys.subsystems.get<first>(sys.system_id).destroy();
 }
