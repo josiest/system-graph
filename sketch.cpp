@@ -43,6 +43,12 @@ using second = order_system<order::second>;
 
 class system_manager {
 public:
+    system_manager(const system_manager&) = delete;
+    system_manager& operator=(const system_manager&) = delete;
+
+    system_manager(system_manager &&) = default;
+    system_manager& operator=(system_manager &&) = default;
+
     system_manager() : registry{}, system_id{ registry.create() }
     {
     }
@@ -52,9 +58,6 @@ public:
         subsystems.clear();
         registry.clear();
     }
-    system_manager(const system_manager&) = delete;
-    system_manager& operator=(const system_manager&) = delete;
-
     template<std::derived_from<subsystem> Subsystem>
     requires std::default_initializable<Subsystem>
     void add()
@@ -83,5 +86,7 @@ int main()
     system_manager systems;
     systems.add<first>();
     systems.add<second>();
-    systems.load();
+
+    system_manager moved_systems = std::move(systems);
+    moved_systems.load();
 }
