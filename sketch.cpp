@@ -46,6 +46,15 @@ public:
     system_manager() : registry{}, system_id{ registry.create() }
     {
     }
+    ~system_manager()
+    {
+        destroy();
+        subsystems.clear();
+        registry.clear();
+    }
+    system_manager(const system_manager&) = delete;
+    system_manager& operator=(const system_manager&) = delete;
+
     template<std::derived_from<subsystem> Subsystem>
     requires std::default_initializable<Subsystem>
     void add()
@@ -75,5 +84,4 @@ int main()
     systems.add<first>();
     systems.add<second>();
     systems.load();
-    systems.destroy();
 }
