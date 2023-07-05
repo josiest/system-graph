@@ -50,33 +50,33 @@ class second : public order_system<order::second> {
 public:
 
     template<std::output_iterator<entt::id_type> TypeOutput>
-    static TypeOutput dependencies(TypeOutput into_types)
+    static TypeOutput dependencies(TypeOutput into_dependencies)
     {
         namespace ranges = std::ranges;
         return ranges::copy(std::array{ entt::type_hash<first>::value() },
-                            into_types).out;
+                            into_dependencies).out;
     }
 };
 
 class fourth : public order_system<order::fourth> {
     template<std::output_iterator<entt::id_type> TypeOutput>
-    static TypeOutput dependencies(TypeOutput into_types)
+    static TypeOutput dependencies(TypeOutput into_dependencies)
     {
         namespace ranges = std::ranges;
         return ranges::copy(std::array{ entt::type_hash<second>::value(),
                                         entt::type_hash<third>::value() },
-                            into_types).out;
+                            into_dependencies).out;
     }
 };
 
 int main()
 {
     pi::system_manager systems;
-    systems.add<fourth>();
     systems.add<first>();
     systems.add<second>();
     systems.add<third>();
+    systems.add<fourth>();
 
-    system_manager moved_systems = std::move(systems);
+    pi::system_manager moved_systems = std::move(systems);
     moved_systems.load();
 }
