@@ -90,13 +90,27 @@ public:
 
 private:
     using subsystem_map = std::unordered_map<entt::id_type, subsystem*>;
+    using id_inserter_t = std::insert_iterator<std::vector<entt::id_type>>;
 
-    using id_set = std::unordered_set<entt::id_type>;
-    using id_inserter_t = std::insert_iterator<id_set>;
+    template<typename T>
+    void declare_dependencies()
+    {
+        namespace pig = pi::graphs;
+        pig::edge_set edges;
+        dependencies.emplace(entt::type_hash<T>::value(), edges);
+    }
 
-    using dependency_node = std::pair<id_set, id_set>;
-    using dependency_graph =
-        std::unordered_map<entt::id_type, dependency_node>;
+    template<typename T>
+    requires has_dependencies<T, id_inserter_t>
+    void declare_dependencies()
+    {
+        std::vector<entt::id_type> incoming;
+        T::dependencies(std::back_inserter(incoming));
+
+        namespace pig = pi::graphs;
+        const auto to = entt::type_hash<T>::value();
+        pig::add_edges_from(dependencies, incoming, to);
+    }
 
     template<std::invocable<subsystem*> Visitor>
     auto visit_with_subsystem(Visitor visit) const
@@ -115,53 +129,6 @@ private:
                 return std::invoke(visit, search->second);
             }
         };
-    }
-
-    template<typename T>
-    void declare_dependencies()
-    {
-        namespace pig = pi::graphs;
-        pig::node node;
-        auto& children = node.children;
-        read_dependents<T>(std::inserter(children, children.begin()));
-        dependencies.emplace(entt::type_hash<T>::value(), node);
-    }
-
-    template<typename T>
-    requires has_dependencies<T, id_inserter_t>
-    void declare_dependencies()
-    {
-        namespace pig = pi::graphs;
-        pig::node node;
-        T::dependencies(std::inserter(node.parents, node.parents.begin()));
-        const auto subsystem_id = entt::type_hash<T>::value();
-        for (const auto dependent_id : node.parents) {
-
-            if (auto search = dependencies.find(dependent_id);
-                     search != dependencies.end()) {
-
-                pig::node& parent = search->second;
-                parent.children.insert(subsystem_id);
-            }
-        }
-        auto& children = node.children;
-        read_dependents<T>(std::inserter(children, children.begin()));
-        dependencies.emplace(subsystem_id, node);
-    }
-
-    template<typename T, std::output_iterator<entt::id_type> TypeOutput>
-    TypeOutput read_dependents(TypeOutput into_types)
-    {
-        namespace pig = pi::graphs;
-        namespace ranges = std::ranges; namespace views = std::views;
-
-        const auto subsystem_id = entt::type_hash<T>::value();
-        auto is_dependent = [=](const auto& elem) {
-            return elem.second.parents.contains(subsystem_id);
-        };
-        return ranges::transform(dependencies | views::filter(is_dependent),
-                                 into_types,
-                                 &pig::graph::value_type::first).out;
     }
 
     entt::registry registry;
