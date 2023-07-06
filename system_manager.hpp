@@ -1,4 +1,4 @@
-#include "id_graph.hpp"
+#include "graphs.hpp"
 
 #include <cstdio>
 #include <string_view>
@@ -120,7 +120,7 @@ private:
         namespace pig = pi::graphs;
 
         const auto subsystem_id = entt::type_hash<T>::value();
-        pig::edge_set edges;
+        pig::edge_set<entt::id_type> edges;
         dependencies.emplace(subsystem_id, edges);
     }
 
@@ -159,6 +159,6 @@ private:
     entt::registry registry;
     entt::entity system_id;
     subsystem_map subsystems;
-    pi::graphs::graph dependencies;
+    pi::graphs::graph<entt::id_type> dependencies;
 };
 }
