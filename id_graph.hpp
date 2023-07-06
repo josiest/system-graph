@@ -117,7 +117,9 @@ void bfs(const graph& g, entt::id_type root, id_set& visited, Visitor visit)
         }
 
         // don't visit branches with unvisited dependencies
-        if (not ranges::includes(visited, *incoming)) {
+        // if (not ranges::includes(visited, *incoming)) {
+        auto is_visited = [&](const auto id) { return visited.contains(id); };
+        if (not ranges::all_of(*incoming, is_visited)) {
             continue;
         }
         std::invoke(visit, from);

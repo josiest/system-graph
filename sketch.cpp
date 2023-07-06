@@ -7,6 +7,8 @@
 #include "system_manager.hpp"
 #include <entt/entt.hpp>
 
+#include <iostream>
+
 enum class order {
     first, second, third, fourth
 };
@@ -41,6 +43,10 @@ public:
     {
         std::printf("destroy %s\n", name_for<Order>);
     }
+    virtual constexpr std::string_view name() const
+    {
+        return name_for<Order>;
+    }
 };
 
 using first = order_system<order::first>;
@@ -59,6 +65,7 @@ public:
 };
 
 class fourth : public order_system<order::fourth> {
+public:
     template<std::output_iterator<entt::id_type> TypeOutput>
     static TypeOutput dependencies(TypeOutput into_dependencies)
     {
@@ -77,6 +84,12 @@ int main()
     systems.add<third>();
     systems.add<fourth>();
 
+    std::cout << "\n[dependencies]\n";
+    systems.print_dependencies_to(std::cout);
+
+    std::cout << "\n[load]\n";
     pi::system_manager moved_systems = std::move(systems);
     moved_systems.load();
+
+    std::cout << "\n[destroy]\n";
 }

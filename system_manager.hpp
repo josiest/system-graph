@@ -1,6 +1,7 @@
 #include "id_graph.hpp"
 
 #include <cstdio>
+#include <string_view>
 
 #include <concepts>
 #include <iterator>
@@ -20,6 +21,7 @@ class subsystem {
 public:
     virtual void load() = 0;
     virtual void destroy() = 0;
+    virtual constexpr std::string_view name() const = 0;
 };
 
 template<typename T, std::output_iterator<entt::id_type> TypeOutput>
@@ -51,7 +53,8 @@ public:
     void add()
     {
         auto& component = registry.emplace<Subsystem>(system_id);
-        subsystems.emplace(entt::type_hash<Subsystem>::value(), &component);
+        const auto subsystem_id = entt::type_hash<Subsystem>::value();
+        subsystems.emplace(subsystem_id, &component);
         declare_dependencies<Subsystem>();
     }
     void load() { for_each(&subsystem::load); }
@@ -88,6 +91,25 @@ public:
         pig::rfor_each(dependencies, visit_with_subsystem(visit));
     }
 
+    template<typename OutputStream>
+    void print_dependencies_to(OutputStream& os) const
+    {
+        for (const auto& [id, edges] : dependencies)
+        {
+            os << subsystems.at(id)->name();
+            if (edges.incoming.empty()) {
+                os << " has no dependencies\n";
+                continue;
+            }
+            os << " depends on [";
+            std::string_view sep = "";
+            for (const auto parent : edges.incoming) {
+                os << sep << subsystems.at(parent)->name();
+                sep = ", ";
+            }
+            os << "]\n";
+        };
+    }
 private:
     using subsystem_map = std::unordered_map<entt::id_type, subsystem*>;
     using id_inserter_t = std::insert_iterator<std::vector<entt::id_type>>;
@@ -96,18 +118,21 @@ private:
     void declare_dependencies()
     {
         namespace pig = pi::graphs;
+
+        const auto subsystem_id = entt::type_hash<T>::value();
         pig::edge_set edges;
-        dependencies.emplace(entt::type_hash<T>::value(), edges);
+        dependencies.emplace(subsystem_id, edges);
     }
 
     template<typename T>
     requires has_dependencies<T, id_inserter_t>
     void declare_dependencies()
     {
+        namespace pig = pi::graphs;
+
         std::vector<entt::id_type> incoming;
         T::dependencies(std::back_inserter(incoming));
 
-        namespace pig = pi::graphs;
         const auto to = entt::type_hash<T>::value();
         pig::add_edges_from(dependencies, incoming, to);
     }
