@@ -18,7 +18,53 @@ namespace graphs {
 struct edge_set { id_set incoming, outgoing; };
 using graph = std::unordered_map<entt::id_type, edge_set>;
 
+enum class direction{ forward, reverse };
 namespace internal {
+
+template<direction Direction>
+auto& parents_of(edge_set& edges)
+{
+    if constexpr (Direction == direction::forward) {
+        return edges.incoming;
+    }
+    else {
+        return edges.outgoing;
+    }
+}
+
+template<direction Direction>
+const auto& parents_of(const edge_set& edges)
+{
+    if constexpr (Direction == direction::forward) {
+        return edges.incoming;
+    }
+    else {
+        return edges.outgoing;
+    }
+}
+
+template<direction Direction>
+auto& children_of(edge_set& edges)
+{
+    if constexpr (Direction == direction::forward) {
+        return edges.outgoing;
+    }
+    else {
+        return edges.incoming;
+    }
+}
+
+template<direction Direction>
+const auto& children_of(const edge_set& edges)
+{
+    if constexpr (Direction == direction::forward) {
+        return edges.outgoing;
+    }
+    else {
+        return edges.incoming;
+    }
+}
+
 auto into_edges(id_set& ids)
 {
     return std::inserter(ids, ids.begin());
@@ -84,15 +130,16 @@ void add_edges_to(graph& g, entt::id_type from, const DestRange& destinations)
     }
 }
 
-namespace internal {
-enum class direction{ forward, reverse };
-
 // BFS a cut of a graph
-// such that no branches with unvisited incoming are explored
-template<direction Direction, std::invocable<entt::id_type> Visitor>
-void bfs(const graph& g, entt::id_type root, id_set& visited, Visitor visit)
+template<direction Direction, std::invocable<entt::id_type> Visitor,
+                              std::invocable<entt::id_type> Predicate>
+
+requires std::same_as<std::invoke_result_t<Predicate, entt::id_type>, bool>
+void bfs_cut(const graph& g, entt::id_type root,
+             Visitor visit, Predicate should_cut)
 {
     namespace ranges = std::ranges; namespace views = std::views;
+    using namespace internal;
 
     std::deque next = { root };
     id_set seen = { root };
@@ -104,34 +151,23 @@ void bfs(const graph& g, entt::id_type root, id_set& visited, Visitor visit)
         auto from = next.front();
         next.pop_front();
 
-        const id_set* incoming;
-        const id_set* outgoing;
-        auto search = g.find(from);
-        if constexpr (Direction == direction::forward) {
-            incoming = &search->second.incoming;
-            outgoing = &search->second.outgoing;
-        }
-        else {
-            incoming = &search->second.outgoing;
-            outgoing = &search->second.incoming;
-        }
-
-        // don't visit branches with unvisited dependencies
-        // if (not ranges::includes(visited, *incoming)) {
-        auto is_visited = [&](const auto id) { return visited.contains(id); };
-        if (not ranges::all_of(*incoming, is_visited)) {
+        if (std::invoke(should_cut, from)) {
             continue;
         }
         std::invoke(visit, from);
-        visited.insert(from);
+
+        const auto search = g.find(from);
+        if (g.end() == search) { continue; }
 
         // bfs iteration: visit branches from current edge_set
         // only add edges that are haven't been explored
-        ranges::copy_if(*outgoing, std::back_inserter(next), not_seen);
-        ranges::copy(*outgoing, std::inserter(seen, seen.begin()));
+        const id_set& outgoing = children_of<Direction>(search->second);
+        ranges::copy_if(outgoing, std::back_inserter(next), not_seen);
+        ranges::copy(outgoing, std::inserter(seen, seen.begin()));
     }
 }
 
+namespace internal {
 auto is_root_of(const graph& g)
 {
     return [&g](const graph::value_type& elem) {
@@ -144,20 +180,57 @@ auto is_leaf_of(const graph& g)
         return elem.second.outgoing.empty();
     };
 }
+
+template<direction Direction>
+auto cut_if_unvisited(const graph& g, const id_set& visited)
+{
+    namespace ranges = std::ranges;
+    using namespace internal;
+
+    return [&](const auto id) {
+        const auto search = g.find(id);
+        if (g.end() == search) { return false; }
+
+        const id_set& incoming = parents_of<Direction>(search->second);
+        return not ranges::includes(visited, incoming);
+    };
+}
+
+auto cut_if_unvisited_parents(const graph& g, const id_set& visited)
+{
+    return cut_if_unvisited<direction::forward>(g, visited);
+}
+auto cut_if_unvisited_children(const graph& g, const id_set& visited)
+{
+    return cut_if_unvisited<direction::reverse>(g, visited);
+}
+
+template<std::invocable<entt::id_type> Visitor>
+auto visit_with_set(Visitor visit,
+                    std::unordered_set<entt::id_type>& visited)
+{
+    return [&visited, visit](entt::id_type id) {
+        std::invoke(visit, id);
+        visited.emplace(id);
+    };
+}
 }
 
 template<std::invocable<entt::id_type> Visitor>
 void for_each(const graph& g, Visitor visit)
 {
     namespace ranges = std::ranges; namespace views = std::views;
+    using namespace internal;
+
     std::vector<entt::id_type> roots;
-    ranges::transform(g | views::filter(internal::is_root_of(g)),
+    ranges::transform(g | views::filter(is_root_of(g)),
                       std::back_inserter(roots), &graph::value_type::first);
 
     id_set visited;
-    constexpr auto forward = internal::direction::forward;
+    constexpr auto forward = direction::forward;
     for (const auto root : roots) {
-        internal::bfs<forward>(g, root, visited, visit);
+        bfs_cut<forward>(g, root, visit_with_set(visit, visited),
+                                  cut_if_unvisited_parents(g, visited));
     };
 }
 
@@ -165,14 +238,17 @@ template<std::invocable<entt::id_type> Visitor>
 void rfor_each(const graph& g, Visitor visit)
 {
     namespace ranges = std::ranges; namespace views = std::views;
+    using namespace internal;
+
     std::vector<entt::id_type> leafs;
-    ranges::transform(g | views::filter(internal::is_leaf_of(g)),
+    ranges::transform(g | views::filter(is_leaf_of(g)),
                       std::back_inserter(leafs), &graph::value_type::first);
 
     id_set visited;
-    constexpr auto reverse = internal::direction::reverse;
+    constexpr auto reverse = direction::reverse;
     for (const auto leaf : leafs) {
-        internal::bfs<reverse>(g, leaf, visited, visit);
+        bfs_cut<reverse>(g, leaf, visit_with_set(visit, visited),
+                                  cut_if_unvisited_children(g, visited));
     };
 }
 }

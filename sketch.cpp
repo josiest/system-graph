@@ -33,17 +33,17 @@ template<order Order>
 constexpr auto name_for = name_helper<Order>::value;
 
 template<order Order>
-class order_system : public pi::subsystem {
+class order_system : public pi::ISubsystem {
 public:
     virtual void load() override
     {
-        std::printf("load %s\n", name_for<Order>);
+        std::cout << "load " << name_for<Order> << "\n";
     }
     virtual void destroy() override
     {
-        std::printf("destroy %s\n", name_for<Order>);
+        std::cout << "destroy " << name_for<Order> << "\n";
     }
-    virtual constexpr std::string_view name() const
+    virtual constexpr std::string_view name() const override
     {
         return name_for<Order>;
     }
@@ -54,7 +54,6 @@ using third = order_system<order::third>;
 
 class second : public order_system<order::second> {
 public:
-
     template<std::output_iterator<entt::id_type> TypeOutput>
     static TypeOutput dependencies(TypeOutput into_dependencies)
     {
@@ -79,10 +78,10 @@ public:
 int main()
 {
     pi::system_manager systems;
-    systems.add<first>();
-    systems.add<second>();
-    systems.add<third>();
     systems.add<fourth>();
+    systems.add<first>();
+    systems.add<third>();
+    systems.add<second>();
 
     std::cout << "\n[dependencies]\n";
     systems.print_dependencies_to(std::cout);

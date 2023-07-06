@@ -17,7 +17,7 @@
 #include <entt/entt.hpp>
 
 namespace pi {
-class subsystem {
+class ISubsystem {
 public:
     virtual void load() = 0;
     virtual void destroy() = 0;
@@ -48,7 +48,7 @@ public:
         subsystems.clear();
         registry.clear();
     }
-    template<std::derived_from<subsystem> Subsystem>
+    template<std::derived_from<ISubsystem> Subsystem>
     requires std::default_initializable<Subsystem>
     void add()
     {
@@ -57,8 +57,8 @@ public:
         subsystems.emplace(subsystem_id, &component);
         declare_dependencies<Subsystem>();
     }
-    void load() { for_each(&subsystem::load); }
-    void destroy() { rfor_each(&subsystem::destroy); }
+    void load() { for_each(&ISubsystem::load); }
+    void destroy() { rfor_each(&ISubsystem::destroy); }
 
     template<typename T>
     auto& get()
@@ -66,25 +66,25 @@ public:
         return registry.get<T>(system_id);
     }
 
-    template<std::invocable<subsystem*> Visitor>
+    template<std::invocable<ISubsystem*> Visitor>
     void for_each(Visitor visit) const
     {
         namespace pig = pi::graphs;
         pig::for_each(dependencies, visit_with_subsystem(visit));
     }
-    template<std::invocable<const subsystem*> Visitor>
+    template<std::invocable<const ISubsystem*> Visitor>
     void for_each(Visitor visit) const
     {
         namespace pig = pi::graphs;
         pig::for_each(dependencies, visit_with_subsystem(visit));
     }
-    template<std::invocable<subsystem*> Visitor>
+    template<std::invocable<ISubsystem*> Visitor>
     void rfor_each(Visitor visit) const
     {
         namespace pig = pi::graphs;
         pig::rfor_each(dependencies, visit_with_subsystem(visit));
     }
-    template<std::invocable<const subsystem*> Visitor>
+    template<std::invocable<const ISubsystem*> Visitor>
     void rfor_each(Visitor visit) const
     {
         namespace pig = pi::graphs;
@@ -111,7 +111,7 @@ public:
         };
     }
 private:
-    using subsystem_map = std::unordered_map<entt::id_type, subsystem*>;
+    using subsystem_map = std::unordered_map<entt::id_type, ISubsystem*>;
     using id_inserter_t = std::insert_iterator<std::vector<entt::id_type>>;
 
     template<typename T>
@@ -137,7 +137,7 @@ private:
         pig::add_edges_from(dependencies, incoming, to);
     }
 
-    template<std::invocable<subsystem*> Visitor>
+    template<std::invocable<ISubsystem*> Visitor>
     auto visit_with_subsystem(Visitor visit) const
     {
         return [&ids = subsystems, visit](const entt::id_type id) {
@@ -146,7 +146,7 @@ private:
             }
         };
     }
-    template<std::invocable<const subsystem*> Visitor>
+    template<std::invocable<const ISubsystem*> Visitor>
     auto visit_with_subsystem(Visitor visit) const
     {
         return [&ids = subsystems, visit](const entt::id_type id) {
