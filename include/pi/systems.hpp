@@ -10,9 +10,9 @@
 #include <entt/entt.hpp>
 
 namespace pi {
+
 class ISubsystem {
 public:
-    virtual void load() = 0;
     virtual void destroy() = 0;
     virtual constexpr std::string_view name() const = 0;
 };
@@ -22,6 +22,13 @@ constexpr bool has_dependencies =
 requires(TypeOutput into_types)
 {
     { Subsystem::dependencies(into_types) } -> std::same_as<TypeOutput>;
+};
+
+class system_manager;
+template<typename Subsystem>
+constexpr bool has_default_load = requires(system_manager& systems)
+{
+    { Subsystem::load(systems) } -> std::same_as<Subsystem*>;
 };
 
 class system_manager {
@@ -41,16 +48,26 @@ public:
         subsystems.clear();
         registry.clear();
     }
-    template<std::derived_from<ISubsystem> Subsystem>
-    requires std::default_initializable<Subsystem>
-    void add()
+    template<std::derived_from<ISubsystem> Subsystem, typename... Args>
+    Subsystem& emplace(Args &&... args)
     {
-        auto& component = registry.emplace<Subsystem>(system_id);
-        const auto subsystem_id = entt::type_hash<Subsystem>::value();
-        subsystems.emplace(subsystem_id, &component);
         declare_dependencies<Subsystem>();
+        auto& subsystem = registry.emplace<Subsystem>(
+                system_id, std::forward<Args>(args)...);
+
+        const auto subsystem_id = entt::type_hash<Subsystem>::value();
+        subsystems.emplace(subsystem_id, &subsystem);
+        return subsystem;
     }
-    inline void load() { for_each(&ISubsystem::load); }
+    template<std::derived_from<ISubsystem> Subsystem>
+    requires has_default_load<Subsystem>
+    Subsystem* load()
+    {
+        if (registry.any_of<Subsystem>(system_id)) {
+            return registry.try_get<Subsystem>(system_id);
+        }
+        return Subsystem::load(*this);
+    }
     inline void destroy() { rfor_each(&ISubsystem::destroy); }
 
     template<typename Subsystem>
