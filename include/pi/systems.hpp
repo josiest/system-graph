@@ -1,19 +1,12 @@
-#include "graphs.hpp"
-
-#include <cstdio>
-#include <string_view>
-
+#include "pi/graphs.hpp"
 #include <concepts>
 #include <iterator>
 
-#include <algorithm>
-#include <ranges>
-
-#include <utility>
-#include <unordered_set>
 #include <unordered_map>
+#include <vector>
 #include <deque>
 
+#include <string_view>
 #include <entt/entt.hpp>
 
 namespace pi {
@@ -24,11 +17,11 @@ public:
     virtual constexpr std::string_view name() const = 0;
 };
 
-template<typename T, std::output_iterator<entt::id_type> TypeOutput>
+template<typename Subsystem, std::output_iterator<entt::id_type> TypeOutput>
 constexpr bool has_dependencies =
 requires(TypeOutput into_types)
 {
-    { T::dependencies(into_types) } -> std::same_as<TypeOutput>;
+    { Subsystem::dependencies(into_types) } -> std::same_as<TypeOutput>;
 };
 
 class system_manager {
@@ -57,13 +50,13 @@ public:
         subsystems.emplace(subsystem_id, &component);
         declare_dependencies<Subsystem>();
     }
-    void load() { for_each(&ISubsystem::load); }
-    void destroy() { rfor_each(&ISubsystem::destroy); }
+    inline void load() { for_each(&ISubsystem::load); }
+    inline void destroy() { rfor_each(&ISubsystem::destroy); }
 
-    template<typename T>
+    template<typename Subsystem>
     auto& get()
     {
-        return registry.get<T>(system_id);
+        return registry.get<Subsystem>(system_id);
     }
 
     template<std::invocable<ISubsystem*> Visitor>
@@ -114,26 +107,26 @@ private:
     using subsystem_map = std::unordered_map<entt::id_type, ISubsystem*>;
     using id_inserter_t = std::insert_iterator<std::vector<entt::id_type>>;
 
-    template<typename T>
+    template<typename Subsystem>
     void declare_dependencies()
     {
         namespace pig = pi::graphs;
 
-        const auto subsystem_id = entt::type_hash<T>::value();
+        const auto subsystem_id = entt::type_hash<Subsystem>::value();
         pig::edge_set<entt::id_type> edges;
         dependencies.emplace(subsystem_id, edges);
     }
 
-    template<typename T>
-    requires has_dependencies<T, id_inserter_t>
+    template<typename Subsystem>
+    requires has_dependencies<Subsystem, id_inserter_t>
     void declare_dependencies()
     {
         namespace pig = pi::graphs;
 
         std::vector<entt::id_type> incoming;
-        T::dependencies(std::back_inserter(incoming));
+        Subsystem::dependencies(std::back_inserter(incoming));
 
-        const auto to = entt::type_hash<T>::value();
+        const auto to = entt::type_hash<Subsystem>::value();
         pig::add_edges_from(dependencies, incoming, to);
     }
 

@@ -1,13 +1,10 @@
-#include <cstdio>
-
+#include <iostream>
 #include <iterator>
 #include <algorithm>
 #include <array>
 
-#include "system_manager.hpp"
 #include <entt/entt.hpp>
-
-#include <iostream>
+#include "pi/systems.hpp"
 
 enum class order {
     first, second, third, fourth
