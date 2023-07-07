@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(subsystem-interface)
+project(subsystem-interface-example)
 
 add_executable(sketch sketch.cpp)
 target_include_directories(sketch PRIVATE ../include)

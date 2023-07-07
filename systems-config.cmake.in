@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(${CMAKE_CURRENT_LIST_DIR}/systems-targets.cmake)
+check_required_components(pi-systems)
+
+include(CMakeFindDependencyMacro)
+find_dependency(EnTT)
