@@ -94,25 +94,21 @@ public:
     template<std::invocable<ISystem*> Visitor>
     void for_each(Visitor visit) const
     {
-        namespace pig = pi::graphs;
         graphs::for_each(dependencies, visit_with_system(visit));
     }
     template<std::invocable<const ISystem*> Visitor>
     void for_each(Visitor visit) const
     {
-        namespace pig = pi::graphs;
         graphs::for_each(dependencies, visit_with_system(visit));
     }
     template<std::invocable<ISystem*> Visitor>
     void rfor_each(Visitor visit) const
     {
-        namespace pig = pi::graphs;
         graphs::rfor_each(dependencies, visit_with_system(visit));
     }
     template<std::invocable<const ISystem*> Visitor>
     void rfor_each(Visitor visit) const
     {
-        namespace pig = pi::graphs;
         graphs::rfor_each(dependencies, visit_with_system(visit));
     }
 
@@ -142,8 +138,6 @@ private:
     template<typename System>
     void declare_dependencies()
     {
-        namespace pig = pi::graphs;
-
         const auto subsystem_id = entt::type_hash<System>::value();
         graphs::directed_edge_set<entt::id_type> edges;
         dependencies.emplace(subsystem_id, edges);
@@ -153,8 +147,6 @@ private:
     requires has_dependencies<System, id_inserter_t>
     void declare_dependencies()
     {
-        namespace pig = pi::graphs;
-
         std::vector<entt::id_type> incoming;
         System::dependencies(std::back_inserter(incoming));
 

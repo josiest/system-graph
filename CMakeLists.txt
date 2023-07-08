@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 project(pi-systems VERSION 0.1.0)
 
 #
@@ -8,7 +8,7 @@ project(pi-systems VERSION 0.1.0)
 include(GNUInstallDirs)
 add_library(pi-systems INTERFACE)
 add_library(pi::systems ALIAS pi-systems)
-target_compile_features(pi-systems INTERFACE cxx_std_23)
+target_compile_features(pi-systems INTERFACE cxx_std_20)
 
 find_package(EnTT REQUIRED)
 target_link_libraries(pi-systems INTERFACE EnTT::EnTT)
