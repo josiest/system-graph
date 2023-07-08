@@ -15,7 +15,86 @@ resources in an order their dependencies allow.
 - [EnTT](https://github.com/skypjack/entt)
 - A compiler for C++20 or later
 
-## example
+# how to use
+The system-graph is fairly simple, yet still likely easy to get wrong. We'll
+go over the necessary steps to create a system
+
+## ISystem interface
+
+The `pi::system_graph` currently only supports adding systems that inherit from
+the `pi::ISystem` interface. Currently this means implementing two methods:
+
+`ISystem::name` is a constexpr function that doesn't modify the class, and
+returns a string view of a name that represents the class.
+
+`ISystem::destroy` cleans up resources managed by the system class. This is a
+stand-in for a destructor until system-graph supports destroying in-order.
+
+## declaring dependencies
+If your system has dependencies, it should declare them in the `dependencies`
+function. This is a static function that requires a specific signature. It must
+take and return an `output_iterator` of `entt::id_type`.
+
+Within the body of the dependencies function, the hashed id types of the
+dependent classes should be copied into the output iterator. The function
+should then return the currently valid output iterator.
+
+Here's an example of what this looks like:
+
+```cpp
+class fourth : public pi::ISubsystem {
+    // ...
+public:
+    template<std::output_iterator<entt::id_type> TypeOutput>
+    static TypeOutput dependencies(TypeOutput into_dependencies)
+    {
+        namespace ranges = std::ranges;
+        return ranges::copy(std::array{ entt::type_hash<second>::value(),
+                                        entt::type_hash<third>::value() },
+                            into_dependencies).out;
+    }
+
+    // ...
+};
+```
+
+If your system doesn't have any dependencies, it doesn't need to define this
+function. However, if it doesn't declare any dependencies, where it appears in
+iteration order is indeterminate.
+
+## loading a system
+
+Finally, in order to register a system with a system-graph, the system must
+define a static `load` function that takes in a `pi::system_graph` reference
+and returns a pointer to the loaded system.
+
+Within the body of the load function, the system should first load its
+dependencies using system-graph's `load` method. This is a template function
+that will call the dependent system's static `load` functions, and emplace the
+depency into the system graph.
+
+The `pi::system_graph` class provides the `emplace` method wich constructs a
+system in-place, forwarding any arguments to the constructor. The emplace method
+returns a reference to the constructed system, whose address can be used as the
+return value for the system's load function.
+
+Here's an example of how this works:
+```cpp
+class fourth : public pi::ISystem {
+    // ...
+public:
+    static fourth* load(pi::system_graph& systems)
+    {
+        systems.load<second>();
+        systems.load<third>();
+        std::cout << "load " << name_for[order::fourth] << "\n";
+        return &systems.emplace<fourth>();
+    }
+    // ...
+};
+```
+
+# example
 This example can also be found in the examples folder
 
 ```cpp
