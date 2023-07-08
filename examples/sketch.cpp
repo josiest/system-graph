@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include <entt/entt.hpp>
-#include "pi/systems.hpp"
+#include "pi/systems/system_locator.hpp"
 
 namespace order {
 enum order {
@@ -17,9 +17,9 @@ constexpr std::array<std::string_view, 4> name_for{
 };
 
 template<order::order Order>
-class order_system : public pi::ISubsystem {
+class order_system : public pi::ISystem {
 public:
-    static order_system<Order>* load(pi::system_manager& systems)
+    static order_system<Order>* load(pi::system_locator& systems)
     {
         std::cout << "load " << name_for[Order] << "\n";
         return &systems.emplace<order_system<Order>>();
@@ -46,7 +46,7 @@ public:
         return ranges::copy(std::array{ entt::type_hash<first>::value() },
                             into_dependencies).out;
     }
-    static second* load(pi::system_manager& systems)
+    static second* load(pi::system_locator& systems)
     {
         systems.load<first>();
         std::cout << "load " << name_for[order::second] << "\n";
@@ -64,7 +64,7 @@ public:
                                         entt::type_hash<third>::value() },
                             into_dependencies).out;
     }
-    static fourth* load(pi::system_manager& systems)
+    static fourth* load(pi::system_locator& systems)
     {
         systems.load<second>();
         systems.load<third>();
@@ -75,13 +75,13 @@ public:
 
 int main()
 {
-    pi::system_manager systems;
+    pi::system_locator systems;
     std::cout << "\n[load]\n";
     systems.load<fourth>();
 
     std::cout << "\n[dependencies]\n";
     systems.print_dependencies_to(std::cout);
 
-    pi::system_manager moved_systems = std::move(systems);
+    pi::system_locator moved_systems = std::move(systems);
     std::cout << "\n[destroy]\n";
 }
