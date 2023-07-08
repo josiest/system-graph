@@ -7,7 +7,7 @@
 #include <deque>
 
 #include <string_view>
-#include <entt/entt.hpp>
+#include <entt/entity/registry.hpp>
 
 inline namespace pi {
 
@@ -24,31 +24,31 @@ requires(TypeOutput into_types)
     { System::dependencies(into_types) } -> std::same_as<TypeOutput>;
 };
 
-class system_locator;
+class system_graph;
 template<typename System>
-constexpr bool has_default_load = requires(system_locator& systems)
+constexpr bool has_default_load = requires(system_graph& systems)
 {
     { System::load(systems) } -> std::same_as<System*>;
 };
 template<typename System, typename Config>
 constexpr bool has_config_load =
-requires(system_locator& systems, const Config& config)
+requires(system_graph& systems, const Config& config)
 {
     { System::load(systems, config) } -> std::same_as<System*>;
 };
 
-class system_locator {
+class system_graph {
 public:
-    system_locator(const system_locator&) = delete;
-    system_locator& operator=(const system_locator&) = delete;
+    system_graph(const system_graph&) = delete;
+    system_graph& operator=(const system_graph&) = delete;
 
-    system_locator(system_locator &&) = default;
-    system_locator& operator=(system_locator &&) = default;
+    system_graph(system_graph &&) = default;
+    system_graph& operator=(system_graph &&) = default;
 
-    system_locator() : registry{}, system_id{ registry.create() }
+    system_graph() : registry{}, system_id{ registry.create() }
     {
     }
-    ~system_locator()
+    ~system_graph()
     {
         destroy();
         systems.clear();
