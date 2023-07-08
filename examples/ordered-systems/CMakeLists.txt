@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
-project(subsystem-graph-example)
+project(ordered-systems)
 
 add_executable(sketch sketch.cpp)
-target_include_directories(sketch PRIVATE ../include)
+target_include_directories(sketch PRIVATE ../../include)
 
 set_target_properties(sketch PROPERTIES
     CXX_STANDARD 20
