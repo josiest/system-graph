@@ -16,6 +16,7 @@ class ISystem {
 public:
     virtual void destroy() = 0;
     virtual constexpr std::string_view name() const = 0;
+    virtual ~ISystem() {}
 };
 
 template<typename System, std::output_iterator<entt::id_type> TypeOutput>
