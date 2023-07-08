@@ -1,3 +1,4 @@
+#pragma once
 #include "pi/graphs/digraph.hpp"
 #include <concepts>
 #include <iterator>
