@@ -17,19 +17,10 @@
 
 inline namespace pi {
 
-class window_system : public ISystem {
+class window_system {
 public:
     using unique_window = std::unique_ptr<SDL_Window, sdl_deleter>;
 
-#pragma region Rule of Five
-    window_system(const window_system&) = delete;
-    window_system& operator=(const window_system&) = delete;
-    window_system(window_system &&) = default;
-    window_system& operator=(window_system &&) = default;
-    ~window_system() { destroy(); }
-#pragma endregion
-
-#pragma region ISystem
     template<std::output_iterator<entt::id_type> TypeOutput>
     inline static TypeOutput dependencies(TypeOutput into_dependencies)
     {
@@ -41,27 +32,26 @@ public:
     inline static window_system* load(system_graph& systems)
     {
         if (not systems.load<init_system>()) { return nullptr; }
-        auto* window = SDL_CreateWindow(
-                "A simple window",
-                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                640, 480,
-                SDL_WINDOW_SHOWN);
 
+        // config params
+        constexpr std::string_view name = "A Simple Window";
+        constexpr SDL_Point position{
+            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED
+        };
+        constexpr SDL_Point size{ 640, 480 };
+        constexpr auto flags = 0u;
+
+        auto* window = SDL_CreateWindow(name.data(),
+                                        position.x, position.y,
+                                        size.x, size.y, flags);
         if (not window) {
             std::printf("Failed to create a window: %s\n", SDL_GetError());
             return nullptr;
         }
         return &systems.emplace<window_system>(unique_window{ window });
     }
-    inline virtual void destroy() override
-    {
-        window_handle.reset();
-    }
-    inline virtual constexpr std::string_view name() const override
-    {
-        return "SDL Window";
-    }
-#pragma endregion
+    SDL_Window* window() { return window_handle.get(); }
+private:
     window_system(unique_window && window_ptr)
         : window_handle{ std::move(window_ptr) }
     {

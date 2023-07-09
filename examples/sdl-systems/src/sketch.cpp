@@ -16,7 +16,7 @@ int main()
         std::printf("Fatal error: unable to load fundamental systems\n");
         return EXIT_FAILURE;
     }
-    SDL_Renderer* renderer = renderer_system->renderer_handle.get();
+    SDL_Renderer* renderer = renderer_system->renderer();
 
     // design parameters
     constexpr SDL_Color blue{ 48, 118, 217, 255 };
