@@ -46,10 +46,6 @@ public:
     }
     SDL_Renderer* renderer() { return renderer_handle.get(); }
 
-    renderer_system(unique_renderer && renderer_ptr)
-        : renderer_handle{ std::move(renderer_ptr) }
-    {
-    }
     unique_renderer renderer_handle;
 };
 }

@@ -52,10 +52,6 @@ public:
     }
     SDL_Window* window() { return window_handle.get(); }
 
-    window_system(unique_window && window_ptr)
-        : window_handle{ std::move(window_ptr) }
-    {
-    }
     unique_window window_handle;
 };
 }
