@@ -34,7 +34,10 @@ public:
 
     inline static init_system* load(system_graph& systems)
     {
-        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        // config parameters
+        constexpr auto flags = SDL_INIT_VIDEO;
+
+        if (SDL_Init(flags) != 0) {
             std::printf("Failed to initialize SDL: %s\n", SDL_GetError());
             return nullptr;
         }

@@ -45,7 +45,7 @@ public:
         return &systems.emplace<renderer_system>(unique_renderer{ renderer });
     }
     SDL_Renderer* renderer() { return renderer_handle.get(); }
-private:
+
     renderer_system(unique_renderer && renderer_ptr)
         : renderer_handle{ std::move(renderer_ptr) }
     {

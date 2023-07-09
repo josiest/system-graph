@@ -51,7 +51,7 @@ public:
         return &systems.emplace<window_system>(unique_window{ window });
     }
     SDL_Window* window() { return window_handle.get(); }
-private:
+
     window_system(unique_window && window_ptr)
         : window_handle{ std::move(window_ptr) }
     {
