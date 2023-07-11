@@ -18,8 +18,8 @@ target_include_directories(pi-systems INTERFACE
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(pi-systems INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/pi/graphs.hpp>
-    $<BUILD_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/pi/systems.hpp>)
+    $<BUILD_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/pi/graphs/graphs.hpp>
+    $<BUILD_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/include/pi/systems/system_graph.hpp>)
 
 #
 # Export and Install library targets
