@@ -106,18 +106,14 @@ constexpr std::array<std::string_view, 4> name_for{
 template<order::order Order>
 class order_system {
 public:
+    virtual ~order_system()
+    {
+        std::cout << "destroy " << name_for[Order] << "\n";
+    }
     static order_system<Order>* load(pi::system_graph& systems)
     {
         std::cout << "load " << name_for[Order] << "\n";
         return &systems.emplace<order_system<Order>>();
-    }
-    virtual void destroy() override
-    {
-        std::cout << "destroy " << name_for[Order] << "\n";
-    }
-    virtual constexpr std::string_view name() const override
-    {
-        return name_for[Order];
     }
 };
 
@@ -165,6 +161,9 @@ int main()
     pi::system_graph systems;
     std::cout << "\n[load]\n";
     systems.load<fourth>();
+
+    // std::cout << "\n[dependencies]\n";
+    // systems.print_dependencies_to(std::cout);
 
     pi::system_graph moved_systems = std::move(systems);
     std::cout << "\n[destroy]\n";
