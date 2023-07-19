@@ -157,8 +157,8 @@ void bfs_cut(const directed_adjacency_map<Vertex>& g, Vertex root,
     namespace ranges = std::ranges; namespace views = std::views;
     using namespace internal;
 
-    std::deque next = { root };
-    vertex_set seen = { root };
+    std::deque<Vertex> next = { root };
+    vertex_set<Vertex> seen = { root };
     auto not_seen = [&](Vertex vertex) {
         return g.contains(vertex) and not seen.contains(vertex);
     };
