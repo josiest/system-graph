@@ -104,7 +104,7 @@ constexpr std::array<std::string_view, 4> name_for{
 };
 
 template<order::order Order>
-class order_system : public pi::ISystem {
+class order_system {
 public:
     static order_system<Order>* load(pi::system_graph& systems)
     {
@@ -166,9 +166,6 @@ int main()
     std::cout << "\n[load]\n";
     systems.load<fourth>();
 
-    std::cout << "\n[dependencies]\n";
-    systems.print_dependencies_to(std::cout);
-
     pi::system_graph moved_systems = std::move(systems);
     std::cout << "\n[destroy]\n";
 }
@@ -181,12 +178,6 @@ load first
 load second
 load third
 load fourth
-
-[dependencies]
-fourth depends on [third, second]
-third has no dependencies
-second depends on [first]
-first has no dependencies
 
 [destroy]
 destroy fourth
